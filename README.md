@@ -1,138 +1,113 @@
----
-title: "Reproducible Research Course Project 1"
-author: "Lin Qin"
-date: "November 26, 2017"
-output: 
-    html_document:
-        keep_md: true
----
+## Introduction
 
-## Loading and preprocessing the data
+This assignment uses data from
+the <a href="http://archive.ics.uci.edu/ml/">UC Irvine Machine
+Learning Repository</a>, a popular repository for machine learning
+datasets. In particular, we will be using the "Individual household
+electric power consumption Data Set" which I have made available on
+the course web site:
 
 
-```r
-amd<-read.csv("activity.csv",header=TRUE,sep=",")
-head(amd)
-```
+* <b>Dataset</b>: <a href="https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2Fhousehold_power_consumption.zip">Electric power consumption</a> [20Mb]
 
-```
-##   steps       date interval
-## 1    NA 2012-10-01        0
-## 2    NA 2012-10-01        5
-## 3    NA 2012-10-01       10
-## 4    NA 2012-10-01       15
-## 5    NA 2012-10-01       20
-## 6    NA 2012-10-01       25
-```
+* <b>Description</b>: Measurements of electric power consumption in
+one household with a one-minute sampling rate over a period of almost
+4 years. Different electrical quantities and some sub-metering values
+are available.
 
 
-## What is mean total number of steps taken per day?
+The following descriptions of the 9 variables in the dataset are taken
+from
+the <a href="https://archive.ics.uci.edu/ml/datasets/Individual+household+electric+power+consumption">UCI
+web site</a>:
 
-```r
-daily_steps<-aggregate(steps~date,data=amd,FUN=sum)
-hist(daily_steps$steps,breaks=10,col="gray",xlab="Number of steps",main="Total number of steps taken per day")
-```
+<ol>
+<li><b>Date</b>: Date in format dd/mm/yyyy </li>
+<li><b>Time</b>: time in format hh:mm:ss </li>
+<li><b>Global_active_power</b>: household global minute-averaged active power (in kilowatt) </li>
+<li><b>Global_reactive_power</b>: household global minute-averaged reactive power (in kilowatt) </li>
+<li><b>Voltage</b>: minute-averaged voltage (in volt) </li>
+<li><b>Global_intensity</b>: household global minute-averaged current intensity (in ampere) </li>
+<li><b>Sub_metering_1</b>: energy sub-metering No. 1 (in watt-hour of active energy). It corresponds to the kitchen, containing mainly a dishwasher, an oven and a microwave (hot plates are not electric but gas powered). </li>
+<li><b>Sub_metering_2</b>: energy sub-metering No. 2 (in watt-hour of active energy). It corresponds to the laundry room, containing a washing-machine, a tumble-drier, a refrigerator and a light. </li>
+<li><b>Sub_metering_3</b>: energy sub-metering No. 3 (in watt-hour of active energy). It corresponds to an electric water-heater and an air-conditioner.</li>
+</ol>
 
-![](ReproducibleResearchProject1_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
-
-```r
-mean(daily_steps$steps,na.rm=TRUE)
-```
-
-```
-## [1] 10766.19
-```
-
-```r
-median(daily_steps$steps,na.rm=TRUE)
-```
-
-```
-## [1] 10765
-```
+## Loading the data
 
 
-## What is the average daily activity pattern?
-
-```r
-five_minute_steps<-aggregate(steps~interval,data=amd,FUN=mean)
-plot(five_minute_steps$interval,five_minute_steps$steps,type="l",col="blue",xlab="5-minute intervals",ylab="Numberof steps",main="Average number of steps for each interval for all days")
-```
-
-![](ReproducibleResearchProject1_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
-
-```r
-max<-five_minute_steps[which.max(five_minute_steps$steps),1]
-```
-On average across all the days in the dataset, the 835th 5-minute interval contains the maximum number of steps.
-
-## Imputing missing values
-* Calculate and report the total number of missing values in the dataset.
 
 
-```r
-missing_count<-sum(is.na(amd$steps))
-```
 
-There are 2304 missing values in the dataset.
+When loading the dataset into R, please consider the following:
 
-* Use the mean of each 5-minute interval across all the days to fill missing values.
+* The dataset has 2,075,259 rows and 9 columns. First
+calculate a rough estimate of how much memory the dataset will require
+in memory before reading into R. Make sure your computer has enough
+memory (most modern computers should be fine).
 
+* We will only be using data from the dates 2007-02-01 and
+2007-02-02. One alternative is to read the data from just those dates
+rather than reading in the entire dataset and subsetting to those
+dates.
 
-```r
-impute_data<-transform(amd, steps=ifelse(is.na(amd$steps), five_minute_steps$steps[match(amd$interval, five_minute_steps$interval)], amd$steps))
-```
+* You may find it useful to convert the Date and Time variables to
+Date/Time classes in R using the `strptime()` and `as.Date()`
+functions.
 
-* Make a histogram of the total number of steps taken each day with new data and compared to the original data.
-
-
-```r
-daily_steps_imputed<-aggregate(steps~date,data=impute_data,FUN=sum)
-hist(daily_steps_imputed$steps,breaks=10,col="blue",xlab="number of steps",main="Total number of steps taken per day")
-hist(daily_steps$steps,breaks=10,col="gray",xlab="number of steps",add=T)
-legend("topright",c("Imputed","Original"),col=c("blue","gray"),lwd=10)
-```
-
-![](ReproducibleResearchProject1_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
-
-* Calculate and report the mean and median total number of steps taken per day.
-
-```r
-mean(daily_steps_imputed$steps)
-```
-
-```
-## [1] 10766.19
-```
-
-```r
-median(daily_steps_imputed$steps)
-```
-
-```
-## [1] 10766.19
-```
-
-With imputation, the mean total number of steps taken per day did not change, but median increased to the same value as the mean.
-
-## Are there differences in activity patterns between weekdays and weekends?
-
-* Create a new factor variable in the dataset with two levels - "weekday" and "weekend"
-
-```r
-weekend<-c("Saturday","Sunday")
-impute_data$dow<-as.factor(ifelse(is.element(weekdays(as.Date(impute_data$date)),weekend),"Weekend","Weekday"))
-```
-
-* Make a panel for times series plot of the 5-minute interval average number of steps taken across weekdays and weekend.
+* Note that in this dataset missing values are coded as `?`.
 
 
-```r
-five_minute_steps2<-aggregate(steps~interval+dow,data=impute_data,FUN=mean)
-library(lattice)
-xyplot(five_minute_steps2$steps~five_minute_steps2$interval|five_minute_steps2$dow, main="Average number of 5-minute steps during weekends vs. weekday",xlab="5-minute interval", ylab="Number of steps",layout=c(1,2), type="l")
-```
+## Making Plots
 
-![](ReproducibleResearchProject1_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+Our overall goal here is simply to examine how household energy usage
+varies over a 2-day period in February, 2007. Your task is to
+reconstruct the following plots below, all of which were constructed
+using the base plotting system.
 
-Comparing the above panel, we can see during weekdays, this person started walking earlier than weekends, probably walking to work. Also on average, this person stepped more during weekdays than weekends, suggesting more activities during weekdays.
+First you will need to fork and clone the following GitHub repository:
+[https://github.com/rdpeng/ExData_Plotting1](https://github.com/rdpeng/ExData_Plotting1)
+
+
+For each plot you should
+
+* Construct the plot and save it to a PNG file with a width of 480
+pixels and a height of 480 pixels.
+
+* Name each of the plot files as `plot1.png`, `plot2.png`, etc.
+
+* Create a separate R code file (`plot1.R`, `plot2.R`, etc.) that
+constructs the corresponding plot, i.e. code in `plot1.R` constructs
+the `plot1.png` plot. Your code file **should include code for reading
+the data** so that the plot can be fully reproduced. You should also
+include the code that creates the PNG file.
+
+* Add the PNG file and R code file to your git repository
+
+When you are finished with the assignment, push your git repository to
+GitHub so that the GitHub version of your repository is up to
+date. There should be four PNG files and four R code files.
+
+
+The four plots that you will need to construct are shown below. 
+
+
+### Plot 1
+
+
+![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2.png) 
+
+
+### Plot 2
+
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
+
+
+### Plot 3
+
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4.png) 
+
+
+### Plot 4
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
